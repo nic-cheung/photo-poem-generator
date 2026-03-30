@@ -129,26 +129,34 @@ tab_generate, tab_library = st.tabs(["Generate", "Library"])
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_generate:
 
-    # ── Sidebar ──────────────────────────────────────────────────────────────
-    with st.sidebar:
-        st.header("Settings")
-        _on_cloud = not Path("~/Library").expanduser().exists()
-        if _on_cloud:
-            source = "Upload photos"
-            st.info("Running on Streamlit Cloud — use Upload photos below.")
-        else:
+    # ── Settings & uploader ───────────────────────────────────────────────────
+    _on_cloud = not Path("~/Library").expanduser().exists()
+
+    if _on_cloud:
+        source = "Upload photos"
+        uploaded_files = st.file_uploader(
+            "Choose photos from your camera roll",
+            type=["jpg", "jpeg", "png", "webp", "heic"],
+            accept_multiple_files=True,
+            label_visibility="visible",
+        )
+    else:
+        with st.sidebar:
+            st.header("Settings")
             source = st.radio("Image source", ["Upload photos", "Local folder"])
+            if source == "Local folder":
+                folder = st.text_input(
+                    "Folder path",
+                    value="~/Library/Mobile Documents/com~apple~CloudDocs/Poems",
+                )
+            else:
+                uploaded_files = st.file_uploader(
+                    "Upload photos",
+                    type=["jpg", "jpeg", "png", "webp", "heic"],
+                    accept_multiple_files=True,
+                )
 
-        if source == "Local folder":
-            folder = st.text_input("Folder path", value="~/Library/Mobile Documents/com~apple~CloudDocs/Poems")
-        else:
-            uploaded_files = st.file_uploader(
-                "Upload photos",
-                type=["jpg", "jpeg", "png", "webp", "heic"],
-                accept_multiple_files=True,
-            )
-
-        st.divider()
+    with st.sidebar:
         st.subheader("Voice")
         voice_engine = st.radio("Engine", ["gTTS (accents)", "Browser (device voices)"])
         if voice_engine == "gTTS (accents)":
