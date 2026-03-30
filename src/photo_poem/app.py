@@ -41,7 +41,7 @@ with st.sidebar:
         )
 
 # ── Session state ────────────────────────────────────────────────────────────
-for key in ("poem", "style", "image_bytes", "image_name", "revealed"):
+for key in ("poem", "style", "image_bytes", "image_name", "revealed", "audio_bytes"):
     if key not in st.session_state:
         st.session_state[key] = None
 
@@ -55,6 +55,7 @@ if st.button("✨ Generate Poem", use_container_width=True):
     st.session_state.style = None
     st.session_state.image_bytes = None
     st.session_state.image_name = None
+    st.session_state.audio_bytes = None
 
     try:
         if source == "Upload photos":
@@ -119,14 +120,16 @@ if st.session_state.poem:
                 tts = gTTS(text=st.session_state.poem, lang="en", slow=False)
                 audio_buffer = io.BytesIO()
                 tts.write_to_fp(audio_buffer)
-                audio_buffer.seek(0)
-                st.audio(audio_buffer, format="audio/mp3")
+                st.session_state.audio_bytes = audio_buffer.getvalue()
             except Exception as e:
                 st.error(f"Could not generate audio: {e}")
 
     with col2:
         if st.button("🔍 Reveal the Photo", use_container_width=True):
             st.session_state.revealed = True
+
+    if st.session_state.audio_bytes:
+        st.audio(st.session_state.audio_bytes, format="audio/mp3")
 
     # ── Reveal ───────────────────────────────────────────────────────────────
     if st.session_state.revealed and st.session_state.image_bytes:
