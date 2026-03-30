@@ -1,5 +1,6 @@
 import base64
 import io
+import json
 import random
 import sys
 from pathlib import Path
@@ -9,11 +10,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from PIL import Image, ImageOps
 import streamlit as st
+import streamlit.components.v1 as components
 from dotenv import load_dotenv
 
 load_dotenv()
 
 from photo_poem.generator import generate_poem_from_path, generate_poem_from_upload  # noqa: E402
+
+GTTS_ACCENTS = {
+    "🇺🇸 US English": "com",
+    "🇬🇧 UK English": "co.uk",
+    "🇦🇺 Australian": "com.au",
+    "🇮🇳 Indian": "co.in",
+    "🇨🇦 Canadian": "ca",
+}
 
 
 def _fix_orientation(file_bytes: bytes) -> bytes:
@@ -21,6 +31,7 @@ def _fix_orientation(file_bytes: bytes) -> bytes:
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=85)
     return buf.getvalue()
+
 
 st.set_page_config(
     page_title="Photo Poem Generator",
@@ -31,7 +42,7 @@ st.set_page_config(
 st.title("📷 Photo Poem Generator")
 st.caption("A poem from your memories — guess the photo before you peek.")
 
-# ── Sidebar: image source ────────────────────────────────────────────────────
+# ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("Settings")
     source = st.radio(
@@ -48,6 +59,12 @@ with st.sidebar:
             type=["jpg", "jpeg", "png", "webp", "heic"],
             accept_multiple_files=True,
         )
+
+    st.divider()
+    st.subheader("Voice")
+    voice_engine = st.radio("Engine", ["gTTS (accents)", "Browser (device voices)"])
+    if voice_engine == "gTTS (accents)":
+        accent_label = st.selectbox("Accent", list(GTTS_ACCENTS.keys()))
 
 # ── Session state ────────────────────────────────────────────────────────────
 for key in ("poem", "style", "image_bytes", "image_name", "revealed", "audio_bytes"):
@@ -122,28 +139,92 @@ if st.session_state.poem:
     # ── Read aloud ───────────────────────────────────────────────────────────
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔊 Read it aloud", width="stretch"):
-            try:
-                from gtts import gTTS
+        if voice_engine == "gTTS (accents)":
+            if st.button("🔊 Read it aloud", width="stretch"):
+                try:
+                    from gtts import gTTS
 
-                tts = gTTS(text=st.session_state.poem, lang="en", slow=False)
-                audio_buffer = io.BytesIO()
-                tts.write_to_fp(audio_buffer)
-                st.session_state.audio_bytes = audio_buffer.getvalue()
-            except Exception as e:
-                st.error(f"Could not generate audio: {e}")
+                    tts = gTTS(
+                        text=st.session_state.poem,
+                        lang="en",
+                        tld=GTTS_ACCENTS[accent_label],
+                        slow=False,
+                    )
+                    audio_buffer = io.BytesIO()
+                    tts.write_to_fp(audio_buffer)
+                    st.session_state.audio_bytes = audio_buffer.getvalue()
+                except Exception as e:
+                    st.error(f"Could not generate audio: {e}")
+        else:
+            st.session_state.audio_bytes = None  # clear any gTTS audio
 
     with col2:
         if st.button("🔍 Reveal the Photo", width="stretch"):
             st.session_state.revealed = True
 
-    if st.session_state.audio_bytes:
+    # ── gTTS audio player ────────────────────────────────────────────────────
+    if voice_engine == "gTTS (accents)" and st.session_state.audio_bytes:
         audio_b64 = base64.b64encode(st.session_state.audio_bytes).decode()
         st.markdown(
             f'<audio controls style="width:100%">'
             f'<source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">'
             f'</audio>',
             unsafe_allow_html=True,
+        )
+
+    # ── Browser voice player ─────────────────────────────────────────────────
+    if voice_engine == "Browser (device voices)":
+        poem_json = json.dumps(st.session_state.poem)
+        components.html(
+            f"""
+            <style>
+              body {{ margin:0; font-family: sans-serif; }}
+              select {{
+                width: 100%; padding: 6px 8px; margin-bottom: 8px;
+                background: #1a1a2e; color: #fff;
+                border: 1px solid #444; border-radius: 6px; font-size: 0.9rem;
+              }}
+              button {{
+                width: 100%; padding: 8px; background: #e94560; color: #fff;
+                border: none; border-radius: 6px; cursor: pointer;
+                font-size: 1rem;
+              }}
+              button:hover {{ background: #c73652; }}
+            </style>
+            <select id="voice-select"><option>Loading voices…</option></select>
+            <button onclick="speak()">🔊 Read it aloud</button>
+            <script>
+              const text = {poem_json};
+              const sel = document.getElementById('voice-select');
+
+              function loadVoices() {{
+                const voices = window.speechSynthesis.getVoices()
+                  .filter(v => v.lang.startsWith('en'));
+                if (!voices.length) return;
+                sel.innerHTML = '';
+                voices.forEach((v, i) => {{
+                  const opt = document.createElement('option');
+                  opt.value = i;
+                  opt.textContent = v.name + ' (' + v.lang + ')';
+                  sel.appendChild(opt);
+                }});
+              }}
+
+              window.speechSynthesis.onvoiceschanged = loadVoices;
+              loadVoices();
+
+              function speak() {{
+                window.speechSynthesis.cancel();
+                const voices = window.speechSynthesis.getVoices()
+                  .filter(v => v.lang.startsWith('en'));
+                const utt = new SpeechSynthesisUtterance(text);
+                utt.voice = voices[parseInt(sel.value)] || null;
+                utt.rate = 0.9;
+                window.speechSynthesis.speak(utt);
+              }}
+            </script>
+            """,
+            height=100,
         )
 
     # ── Reveal ───────────────────────────────────────────────────────────────
