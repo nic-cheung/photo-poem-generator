@@ -139,7 +139,7 @@ with tab_generate:
         )
 
         if source == "Local folder":
-            folder = st.text_input("Folder path", value="~/Pictures")
+            folder = st.text_input("Folder path", value="~/Library/Mobile Documents/com~apple~CloudDocs/Poems")
         else:
             uploaded_files = st.file_uploader(
                 "Upload photos",
