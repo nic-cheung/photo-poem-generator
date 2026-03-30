@@ -1,0 +1,5 @@
+anthropic
+Pillow
+streamlit
+python-dotenv
+gtts
