@@ -3,7 +3,7 @@ import io
 import json
 import random
 import sys
-import zipfile
+import textwrap
 from pathlib import Path
 
 # Allow running directly with `streamlit run src/photo_poem/app.py`
@@ -31,6 +31,89 @@ def _fix_orientation(file_bytes: bytes) -> bytes:
     img = ImageOps.exif_transpose(Image.open(io.BytesIO(file_bytes))).convert("RGB")
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=85)
+    return buf.getvalue()
+
+
+def _make_card(poem: str, style: str, image_bytes: bytes) -> bytes:
+    from PIL import ImageDraw, ImageFont
+
+    HALF_W, CARD_H = 600, 700
+    CARD_W = HALF_W * 2
+    PADDING = 52
+    BG = (15, 15, 26)
+    TEXT_COLOR = (235, 228, 210)
+    ACCENT = (233, 69, 96)
+
+    # --- photo: fill right half with center crop ---
+    photo = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    ratio = photo.width / photo.height
+    target = HALF_W / CARD_H
+    if ratio > target:
+        new_h, new_w = CARD_H, int(photo.width * CARD_H / photo.height)
+    else:
+        new_w, new_h = HALF_W, int(photo.height * HALF_W / photo.width)
+    photo = photo.resize((new_w, new_h), Image.LANCZOS)
+    cx, cy = (new_w - HALF_W) // 2, (new_h - CARD_H) // 2
+    photo = photo.crop((cx, cy, cx + HALF_W, cy + CARD_H))
+
+    card = Image.new("RGB", (CARD_W, CARD_H), color=BG)
+    card.paste(photo, (HALF_W, 0))
+
+    draw = ImageDraw.Draw(card)
+    draw.line([(HALF_W, 0), (HALF_W, CARD_H)], fill=ACCENT, width=3)
+
+    # --- fonts ---
+    _font_candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
+    ]
+
+    def _load(size):
+        for path in _font_candidates:
+            try:
+                return ImageFont.truetype(path, size)
+            except OSError:
+                pass
+        return ImageFont.load_default()
+
+    # Adaptive font size: shrink until poem fits
+    available_h = CARD_H - PADDING * 2 - 50  # reserve space for badge
+    for font_size in (22, 19, 16, 13):
+        poem_font = _load(font_size)
+        line_h = draw.textbbox((0, 0), "Ay", font=poem_font)[3] + 6
+        char_w = max(1, draw.textlength("m", font=poem_font))
+        chars = max(20, int((HALF_W - PADDING * 2) / char_w))
+        lines = []
+        for para in poem.split("\n"):
+            lines.extend(textwrap.wrap(para, width=chars) if para.strip() else [""])
+        if len(lines) * line_h <= available_h:
+            break
+
+    badge_font = _load(13)
+
+    # --- style badge ---
+    badge_text = style.upper()
+    bx0, by0, bx1, by1 = draw.textbbox((0, 0), badge_text, font=badge_font)
+    bw, bh = bx1 - bx0 + 24, by1 - by0 + 12
+    badge_x = (HALF_W - bw) // 2
+    badge_y = PADDING - 10
+    draw.rounded_rectangle(
+        [badge_x, badge_y, badge_x + bw, badge_y + bh], radius=8, fill=ACCENT
+    )
+    draw.text((badge_x + 12, badge_y + 6), badge_text, font=badge_font, fill=(255, 255, 255))
+
+    # --- poem text (vertically centred below badge) ---
+    total_h = len(lines) * line_h
+    text_y = badge_y + bh + max(16, (available_h - total_h) // 2)
+    for line in lines:
+        if line:
+            lw = draw.textlength(line, font=poem_font)
+            draw.text(((HALF_W - lw) // 2, text_y), line, font=poem_font, fill=TEXT_COLOR)
+        text_y += line_h
+
+    buf = io.BytesIO()
+    card.save(buf, format="JPEG", quality=92)
     return buf.getvalue()
 
 
@@ -250,18 +333,18 @@ if st.session_state.poem:
             width="stretch",
         )
 
-    # ── Save ─────────────────────────────────────────────────────────────────
+    # ── Save as card ─────────────────────────────────────────────────────────
     if st.session_state.image_bytes:
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            poem_text = f"{st.session_state.style.upper()}\n\n{st.session_state.poem}\n"
-            zf.writestr("poem.txt", poem_text)
-            photo_name = Path(st.session_state.image_name or "photo.jpg").stem + ".jpg"
-            zf.writestr(photo_name, st.session_state.image_bytes)
+        card_bytes = _make_card(
+            st.session_state.poem,
+            st.session_state.style,
+            st.session_state.image_bytes,
+        )
+        stem = Path(st.session_state.image_name or "poem").stem
         st.download_button(
-            label="💾 Save poem + photo",
-            data=zip_buffer.getvalue(),
-            file_name="poem_and_photo.zip",
-            mime="application/zip",
+            label="💾 Save as card",
+            data=card_bytes,
+            file_name=f"{stem}_card.jpg",
+            mime="image/jpeg",
             width="stretch",
         )
