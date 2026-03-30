@@ -1,13 +1,17 @@
 import io
 import random
+import sys
 from pathlib import Path
+
+# Allow running directly with `streamlit run src/photo_poem/app.py`
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from .generator import generate_poem_from_path, generate_poem_from_upload  # noqa: E402
+from photo_poem.generator import generate_poem_from_path, generate_poem_from_upload  # noqa: E402
 
 st.set_page_config(
     page_title="Photo Poem Generator",
