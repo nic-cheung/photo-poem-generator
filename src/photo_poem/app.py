@@ -3,6 +3,7 @@ import io
 import json
 import random
 import sys
+import zipfile
 from pathlib import Path
 
 # Allow running directly with `streamlit run src/photo_poem/app.py`
@@ -246,5 +247,21 @@ if st.session_state.poem:
         st.image(
             st.session_state.image_bytes,
             caption=st.session_state.image_name,
+            width="stretch",
+        )
+
+    # ── Save ─────────────────────────────────────────────────────────────────
+    if st.session_state.image_bytes:
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            poem_text = f"{st.session_state.style.upper()}\n\n{st.session_state.poem}\n"
+            zf.writestr("poem.txt", poem_text)
+            photo_name = Path(st.session_state.image_name or "photo.jpg").stem + ".jpg"
+            zf.writestr(photo_name, st.session_state.image_bytes)
+        st.download_button(
+            label="💾 Save poem + photo",
+            data=zip_buffer.getvalue(),
+            file_name="poem_and_photo.zip",
+            mime="application/zip",
             width="stretch",
         )
