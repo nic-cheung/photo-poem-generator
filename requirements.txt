@@ -4,3 +4,4 @@ pillow-heif
 streamlit
 python-dotenv
 gtts
+supabase
