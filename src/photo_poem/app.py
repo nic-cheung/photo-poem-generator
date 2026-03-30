@@ -1,3 +1,4 @@
+import base64
 import io
 import random
 import sys
@@ -49,7 +50,7 @@ if "revealed" not in st.session_state:
     st.session_state.revealed = False
 
 # ── Generate button ──────────────────────────────────────────────────────────
-if st.button("✨ Generate Poem", use_container_width=True):
+if st.button("✨ Generate Poem", width="stretch"):
     st.session_state.revealed = False
     st.session_state.poem = None
     st.session_state.style = None
@@ -113,7 +114,7 @@ if st.session_state.poem:
     # ── Read aloud ───────────────────────────────────────────────────────────
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔊 Read it aloud", use_container_width=True):
+        if st.button("🔊 Read it aloud", width="stretch"):
             try:
                 from gtts import gTTS
 
@@ -125,11 +126,17 @@ if st.session_state.poem:
                 st.error(f"Could not generate audio: {e}")
 
     with col2:
-        if st.button("🔍 Reveal the Photo", use_container_width=True):
+        if st.button("🔍 Reveal the Photo", width="stretch"):
             st.session_state.revealed = True
 
     if st.session_state.audio_bytes:
-        st.audio(st.session_state.audio_bytes, format="audio/mp3")
+        audio_b64 = base64.b64encode(st.session_state.audio_bytes).decode()
+        st.markdown(
+            f'<audio controls style="width:100%">'
+            f'<source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">'
+            f'</audio>',
+            unsafe_allow_html=True,
+        )
 
     # ── Reveal ───────────────────────────────────────────────────────────────
     if st.session_state.revealed and st.session_state.image_bytes:
@@ -137,5 +144,5 @@ if st.session_state.poem:
         st.image(
             st.session_state.image_bytes,
             caption=st.session_state.image_name,
-            use_container_width=True,
+            width="stretch",
         )
