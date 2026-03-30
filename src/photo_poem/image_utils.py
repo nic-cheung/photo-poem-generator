@@ -24,6 +24,12 @@ def load_uploaded_image_as_base64(file_bytes: bytes) -> str:
     return _to_base64_jpeg(img)
 
 
+def correct_orientation(file_bytes: bytes) -> bytes:
+    """Return JPEG bytes with EXIF orientation applied (for display)."""
+    img = ImageOps.exif_transpose(Image.open(io.BytesIO(file_bytes))).convert("RGB")
+    return _to_base64_jpeg_bytes(img)
+
+
 def _resize(img: Image.Image) -> Image.Image:
     if max(img.size) > MAX_DIMENSION:
         img.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.LANCZOS)
@@ -31,6 +37,10 @@ def _resize(img: Image.Image) -> Image.Image:
 
 
 def _to_base64_jpeg(img: Image.Image) -> str:
+    return base64.b64encode(_to_base64_jpeg_bytes(img)).decode("utf-8")
+
+
+def _to_base64_jpeg_bytes(img: Image.Image) -> bytes:
     buffer = io.BytesIO()
     img.save(buffer, format="JPEG", quality=85)
-    return base64.b64encode(buffer.getvalue()).decode("utf-8")
+    return buffer.getvalue()

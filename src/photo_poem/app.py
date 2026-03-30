@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from photo_poem.generator import generate_poem_from_path, generate_poem_from_upload  # noqa: E402
+from photo_poem.image_utils import correct_orientation  # noqa: E402
 
 st.set_page_config(
     page_title="Photo Poem Generator",
@@ -69,7 +70,7 @@ if st.button("✨ Generate Poem", width="stretch"):
                 poem, style = generate_poem_from_upload(file_bytes)
             st.session_state.poem = poem
             st.session_state.style = style
-            st.session_state.image_bytes = file_bytes
+            st.session_state.image_bytes = correct_orientation(file_bytes)
             st.session_state.image_name = chosen.name
 
         else:
@@ -88,7 +89,7 @@ if st.button("✨ Generate Poem", width="stretch"):
             st.session_state.poem = poem
             st.session_state.style = style
             with open(chosen_path, "rb") as f:
-                st.session_state.image_bytes = f.read()
+                st.session_state.image_bytes = correct_orientation(f.read())
             st.session_state.image_name = chosen_path.name
 
     except Exception as e:
