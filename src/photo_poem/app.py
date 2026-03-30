@@ -190,17 +190,20 @@ if st.session_state.poem:
                 font-size: 1rem;
               }}
               button:hover {{ background: #c73652; }}
+              #status {{ font-size:0.8rem; color:#aaa; margin-top:4px; }}
             </style>
             <select id="voice-select"><option>Loading voices…</option></select>
             <button onclick="speak()">🔊 Read it aloud</button>
+            <div id="status"></div>
             <script>
               const text = {poem_json};
               const sel = document.getElementById('voice-select');
+              const status = document.getElementById('status');
 
               function loadVoices() {{
                 const voices = window.speechSynthesis.getVoices()
                   .filter(v => v.lang.startsWith('en'));
-                if (!voices.length) return;
+                if (!voices.length) return false;
                 sel.innerHTML = '';
                 voices.forEach((v, i) => {{
                   const opt = document.createElement('option');
@@ -208,10 +211,20 @@ if st.session_state.poem:
                   opt.textContent = v.name + ' (' + v.lang + ')';
                   sel.appendChild(opt);
                 }});
+                status.textContent = voices.length + ' voices available';
+                return true;
               }}
 
-              window.speechSynthesis.onvoiceschanged = loadVoices;
-              loadVoices();
+              // Poll until voices load (onvoiceschanged is unreliable in iframes)
+              if (!loadVoices()) {{
+                const poll = setInterval(() => {{
+                  if (loadVoices()) clearInterval(poll);
+                }}, 100);
+                window.speechSynthesis.onvoiceschanged = () => {{
+                  loadVoices();
+                  clearInterval(poll);
+                }};
+              }}
 
               function speak() {{
                 window.speechSynthesis.cancel();
@@ -224,7 +237,7 @@ if st.session_state.poem:
               }}
             </script>
             """,
-            height=100,
+            height=120,
         )
 
     # ── Reveal ───────────────────────────────────────────────────────────────
