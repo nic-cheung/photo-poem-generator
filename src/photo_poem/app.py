@@ -132,11 +132,12 @@ with tab_generate:
     # ── Sidebar ──────────────────────────────────────────────────────────────
     with st.sidebar:
         st.header("Settings")
-        source = st.radio(
-            "Image source",
-            ["Upload photos", "Local folder"],
-            help="Use 'Upload photos' when running on Streamlit Community Cloud.",
-        )
+        _on_cloud = not Path("~/Library").expanduser().exists()
+        if _on_cloud:
+            source = "Upload photos"
+            st.info("Running on Streamlit Cloud — use Upload photos below.")
+        else:
+            source = st.radio("Image source", ["Upload photos", "Local folder"])
 
         if source == "Local folder":
             folder = st.text_input("Folder path", value="~/Library/Mobile Documents/com~apple~CloudDocs/Poems")
