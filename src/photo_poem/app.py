@@ -4,6 +4,7 @@ import json
 import random
 import sys
 import textwrap
+from datetime import datetime
 from pathlib import Path
 
 # Allow running directly with `streamlit run src/photo_poem/app.py`
@@ -27,6 +28,184 @@ GTTS_ACCENTS = {
     "🇮🇳 Indian": "co.in",
     "🇨🇦 Canadian": "ca",
 }
+
+CSS = """
+<style>
+/* ── Chrome ─────────────────────────────────────────────────────────────── */
+#MainMenu, footer { visibility: hidden; }
+header { visibility: hidden; }
+
+/* ── Page ────────────────────────────────────────────────────────────────── */
+.stApp { background: #09090f; }
+.block-container {
+    padding-top: 2.5rem !important;
+    padding-bottom: 4rem !important;
+    max-width: 660px;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.app-header { text-align: center; margin-bottom: 2rem; }
+.app-header .ornament { color: #e94560; font-size: 1.1rem; display: block; margin-bottom: 0.5rem; }
+.app-header .title {
+    font-family: Georgia, serif;
+    font-size: 1.55rem;
+    font-weight: normal;
+    letter-spacing: 0.14em;
+    color: #e8e0d0;
+    text-transform: uppercase;
+}
+.app-header .subtitle {
+    font-size: 0.78rem;
+    color: #484858;
+    letter-spacing: 0.06em;
+    margin-top: 0.5rem;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+    border-bottom: 1px solid #151520;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    background: transparent !important;
+}
+.stTabs [data-baseweb="tab"] {
+    padding: 0.6rem 2rem !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase;
+    color: #404055 !important;
+    background: transparent !important;
+}
+.stTabs [aria-selected="true"] {
+    color: #e8e0d0 !important;
+    border-bottom: 2px solid #e94560 !important;
+}
+.stTabs [data-baseweb="tab-highlight"] { display: none !important; }
+.stTabs [data-baseweb="tab-border"] { display: none !important; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.stButton > button {
+    font-family: Georgia, serif !important;
+    font-size: 0.88rem !important;
+    letter-spacing: 0.05em !important;
+    border-radius: 9px !important;
+    border: 1px solid #252535 !important;
+    background: #111120 !important;
+    color: #c8c0b0 !important;
+    padding: 0.6rem 1.2rem !important;
+    transition: all 0.18s ease !important;
+    width: 100%;
+}
+.stButton > button:hover {
+    border-color: #e94560 !important;
+    color: #e8e0d0 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(233, 69, 96, 0.15) !important;
+}
+.stButton > button:active { transform: translateY(0) !important; }
+
+/* Generate button — accent filled */
+div[data-testid="element-container"]:has(button[kind="primary"]) button {
+    background: #e94560 !important;
+    border-color: #e94560 !important;
+    color: white !important;
+    font-size: 0.95rem !important;
+    padding: 0.75rem 1.2rem !important;
+}
+
+/* ── File uploader ───────────────────────────────────────────────────────── */
+[data-testid="stFileUploaderDropzone"] {
+    border: 1.5px dashed #1e1e2e !important;
+    border-radius: 12px !important;
+    background: #0c0c18 !important;
+    transition: border-color 0.2s;
+}
+[data-testid="stFileUploaderDropzone"]:hover {
+    border-color: #e94560 !important;
+}
+
+/* ── Poem card ───────────────────────────────────────────────────────────── */
+.poem-card {
+    background: #0d0d1c;
+    border: 1px solid #1a1a2c;
+    border-radius: 18px;
+    padding: 2.8rem 2.4rem 2.4rem;
+    margin: 1.6rem 0 1rem;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    animation: fadeUp 0.5s ease;
+}
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.poem-card .badge {
+    display: block;
+    text-align: center;
+    font-family: -apple-system, sans-serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: #e94560;
+    margin-bottom: 1.8rem;
+    text-transform: uppercase;
+}
+.poem-card .poem-text {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.08rem;
+    line-height: 2;
+    text-align: center;
+    color: #d8d0bc;
+    white-space: pre-wrap;
+}
+
+/* ── Reveal ──────────────────────────────────────────────────────────────── */
+.reveal-label {
+    text-align: center;
+    font-family: -apple-system, sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: #363646;
+    text-transform: uppercase;
+    margin: 2rem 0 0.8rem;
+}
+.stImage { border-radius: 12px; overflow: hidden; }
+
+/* ── Library card ────────────────────────────────────────────────────────── */
+.lib-caption {
+    font-family: -apple-system, sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    color: #404055;
+    margin: 0.4rem 0 1.2rem;
+    text-align: center;
+}
+.lib-caption .lib-style { color: #e94560; }
+.library-empty {
+    text-align: center;
+    color: #2a2a3a;
+    font-size: 0.88rem;
+    padding: 5rem 0;
+    letter-spacing: 0.04em;
+    font-family: Georgia, serif;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+[data-testid="stSidebar"] { background: #080810 !important; border-right: 1px solid #111120 !important; }
+[data-testid="stSidebar"] label { font-size: 0.82rem !important; color: #888 !important; }
+[data-testid="stSidebar"] .stSelectbox > div > div,
+[data-testid="stSidebar"] .stRadio > div { font-size: 0.85rem !important; }
+
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+hr { border-color: #111120 !important; margin: 1.2rem 0 !important; }
+.stSuccess > div { border-radius: 10px !important; font-size: 0.85rem !important; }
+.stWarning > div { border-radius: 10px !important; font-size: 0.85rem !important; }
+audio { width: 100%; border-radius: 8px; margin-top: 0.5rem; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #09090f; }
+::-webkit-scrollbar-thumb { background: #1e1e2e; border-radius: 4px; }
+</style>
+"""
 
 
 def _fix_orientation(file_bytes: bytes) -> bytes:
@@ -113,14 +292,16 @@ def _make_card(poem: str, style: str, image_bytes: bytes) -> bytes:
 
 
 # ── Page config ───────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="Photo Poem Generator",
-    page_icon="📷",
-    layout="centered",
-)
+st.set_page_config(page_title="Photo & Poem", page_icon="✦", layout="centered")
+st.markdown(CSS, unsafe_allow_html=True)
 
-st.title("📷 Photo Poem Generator")
-st.caption("A poem from your memories — guess the photo before you peek.")
+st.markdown("""
+<div class="app-header">
+  <span class="ornament">✦</span>
+  <div class="title">Photo &amp; Poem</div>
+  <div class="subtitle">a poem from memory &mdash; guess the photo before you peek</div>
+</div>
+""", unsafe_allow_html=True)
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 tab_generate, tab_library = st.tabs(["Generate", "Library"])
@@ -130,7 +311,6 @@ tab_generate, tab_library = st.tabs(["Generate", "Library"])
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_generate:
 
-    # ── Settings & uploader ───────────────────────────────────────────────────
     _on_cloud = not Path("~/Library").expanduser().exists()
 
     if _on_cloud:
@@ -139,7 +319,6 @@ with tab_generate:
             "Choose photos from your camera roll",
             type=["jpg", "jpeg", "png", "webp", "heic"],
             accept_multiple_files=True,
-            label_visibility="visible",
         )
     else:
         with st.sidebar:
@@ -180,20 +359,16 @@ with tab_generate:
     if "saved" not in st.session_state:
         st.session_state.saved = False
 
-    # ── Generate button ───────────────────────────────────────────────────────
-    if st.button("✨ Generate Poem", width="stretch"):
-        st.session_state.revealed = False
-        st.session_state.saved = False
-        st.session_state.poem = None
-        st.session_state.style = None
-        st.session_state.image_bytes = None
-        st.session_state.image_name = None
-        st.session_state.audio_bytes = None
-
+    # ── Generate ──────────────────────────────────────────────────────────────
+    if st.button("✦  Generate Poem", type="primary", width="stretch"):
+        st.session_state.update(
+            revealed=False, saved=False, poem=None, style=None,
+            image_bytes=None, image_name=None, audio_bytes=None,
+        )
         try:
             if source == "Upload photos":
                 if not uploaded_files:
-                    st.warning("Please upload at least one photo first.")
+                    st.warning("Upload at least one photo first.")
                     st.stop()
                 chosen = random.choice(uploaded_files)
                 file_bytes = chosen.read()
@@ -203,7 +378,6 @@ with tab_generate:
                 st.session_state.style = style
                 st.session_state.image_bytes = _fix_orientation(file_bytes)
                 st.session_state.image_name = chosen.name
-
             else:
                 folder_path = Path(folder).expanduser()
                 image_files = [
@@ -221,29 +395,22 @@ with tab_generate:
                 with open(chosen_path, "rb") as f:
                     st.session_state.image_bytes = _fix_orientation(f.read())
                 st.session_state.image_name = chosen_path.name
-
         except Exception as e:
             st.error(f"Something went wrong: {e}")
             st.stop()
 
-    # ── Display poem ──────────────────────────────────────────────────────────
+    # ── Poem display ──────────────────────────────────────────────────────────
     if st.session_state.poem:
         st.markdown(
-            f"<div style='text-align:center; margin-bottom:0.25rem;'>"
-            f"<span style='background:#e94560; color:#fff; border-radius:12px; "
-            f"padding:2px 12px; font-size:0.8rem; letter-spacing:0.05em;'>"
-            f"{st.session_state.style.upper()}</span></div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"<div style='font-family:serif; font-size:1.2rem; line-height:1.8; "
-            f"white-space:pre-wrap; text-align:center; padding:1.5rem 0;'>"
-            f"{st.session_state.poem}</div>",
+            f"<div class='poem-card'>"
+            f"<span class='badge'>{st.session_state.style}</span>"
+            f"<div class='poem-text'>{st.session_state.poem}</div>"
+            f"</div>",
             unsafe_allow_html=True,
         )
 
-        # ── Regenerate ───────────────────────────────────────────────────────
-        if st.button("🔄 Regenerate poem", width="stretch"):
+        # Regenerate
+        if st.button("↺  Regenerate", width="stretch"):
             with st.spinner("Writing a new poem…"):
                 try:
                     poem, style = generate_poem_from_upload(
@@ -257,11 +424,11 @@ with tab_generate:
                 except Exception as e:
                     st.error(f"Something went wrong: {e}")
 
-        # ── Read aloud ────────────────────────────────────────────────────────
+        # Read aloud + Reveal
         col1, col2 = st.columns(2)
         with col1:
             if voice_engine == "gTTS (accents)":
-                if st.button("🔊 Read it aloud", width="stretch"):
+                if st.button("♪  Read Aloud", width="stretch"):
                     try:
                         from gtts import gTTS
                         tts = gTTS(
@@ -279,13 +446,14 @@ with tab_generate:
                 st.session_state.audio_bytes = None
 
         with col2:
-            if st.button("🔍 Reveal the Photo", width="stretch"):
+            if st.button("◎  Reveal Photo", width="stretch"):
                 st.session_state.revealed = True
 
+        # Audio
         if voice_engine == "gTTS (accents)" and st.session_state.audio_bytes:
             audio_b64 = base64.b64encode(st.session_state.audio_bytes).decode()
             st.markdown(
-                f'<audio controls style="width:100%">'
+                f'<audio controls>'
                 f'<source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">'
                 f'</audio>',
                 unsafe_allow_html=True,
@@ -299,18 +467,20 @@ with tab_generate:
                   body {{ margin:0; font-family: sans-serif; }}
                   select {{
                     width: 100%; padding: 6px 8px; margin-bottom: 8px;
-                    background: #1a1a2e; color: #fff;
-                    border: 1px solid #444; border-radius: 6px; font-size: 0.9rem;
+                    background: #0d0d1c; color: #c8c0b0;
+                    border: 1px solid #252535; border-radius: 8px; font-size: 0.85rem;
                   }}
                   button {{
-                    width: 100%; padding: 8px; background: #e94560; color: #fff;
-                    border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;
+                    width: 100%; padding: 10px; background: #111120; color: #c8c0b0;
+                    border: 1px solid #252535; border-radius: 8px; cursor: pointer;
+                    font-family: Georgia, serif; font-size: 0.9rem; letter-spacing: 0.04em;
+                    transition: all 0.18s;
                   }}
-                  button:hover {{ background: #c73652; }}
-                  #status {{ font-size:0.8rem; color:#aaa; margin-top:4px; }}
+                  button:hover {{ border-color: #e94560; color: #e8e0d0; }}
+                  #status {{ font-size:0.72rem; color:#404055; margin-top:5px; text-align:center; }}
                 </style>
                 <select id="voice-select"><option>Loading voices…</option></select>
-                <button onclick="speak()">🔊 Read it aloud</button>
+                <button onclick="speak()">♪  Read Aloud</button>
                 <div id="status"></div>
                 <script>
                   const text = {poem_json};
@@ -346,45 +516,40 @@ with tab_generate:
                 height=120,
             )
 
-        # ── Reveal ────────────────────────────────────────────────────────────
+        # Reveal
         if st.session_state.revealed and st.session_state.image_bytes:
-            st.divider()
-            st.image(
-                st.session_state.image_bytes,
-                caption=st.session_state.image_name,
-                width="stretch",
-            )
+            st.markdown('<div class="reveal-label">The Memory</div>', unsafe_allow_html=True)
+            st.image(st.session_state.image_bytes, width="stretch")
 
-        # ── Save to library ───────────────────────────────────────────────────
-        if st.session_state.image_bytes:
-            st.divider()
-            if st.session_state.saved:
-                st.success("Saved to library.")
-            else:
-                if st.button("📚 Save to Library", width="stretch"):
-                    with st.spinner("Saving…"):
-                        try:
-                            card_bytes = _make_card(
-                                st.session_state.poem,
-                                st.session_state.style,
-                                st.session_state.image_bytes,
-                            )
-                            save_entry(
-                                poem=st.session_state.poem,
-                                style=st.session_state.style,
-                                image_name=st.session_state.image_name or "",
-                                card_bytes=card_bytes,
-                            )
-                            st.session_state.saved = True
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Could not save: {e}")
+        # Save
+        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+        if st.session_state.saved:
+            st.success("Saved to library.")
+        else:
+            if st.button("+ Save to Library", width="stretch"):
+                with st.spinner("Saving…"):
+                    try:
+                        card_bytes = _make_card(
+                            st.session_state.poem,
+                            st.session_state.style,
+                            st.session_state.image_bytes,
+                        )
+                        save_entry(
+                            poem=st.session_state.poem,
+                            style=st.session_state.style,
+                            image_name=st.session_state.image_name or "",
+                            card_bytes=card_bytes,
+                        )
+                        st.session_state.saved = True
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Could not save: {e}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # LIBRARY TAB
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_library:
-    if st.button("Refresh", key="refresh_library"):
+    if st.button("↺  Refresh", key="refresh_library"):
         st.rerun()
 
     try:
@@ -394,24 +559,31 @@ with tab_library:
         entries = []
 
     if not entries:
-        st.info("No poems saved yet. Generate one and click 'Save to Library'.")
+        st.markdown(
+            "<div class='library-empty'>No poems saved yet.<br>Generate one and save it to start your library.</div>",
+            unsafe_allow_html=True,
+        )
     else:
-        for entry in entries:
-            try:
-                card_data = get_card_bytes(entry["id"])
-                st.image(card_data, width="stretch")
-            except Exception:
-                st.warning(f"Could not load image for entry {entry['id'][:8]}…")
-            col_meta, col_del = st.columns([4, 1])
-            with col_meta:
-                from datetime import datetime, timezone
+        cols = st.columns(2, gap="medium")
+        for i, entry in enumerate(entries):
+            with cols[i % 2]:
+                try:
+                    card_data = get_card_bytes(entry["id"])
+                    st.image(card_data, width="stretch")
+                except Exception:
+                    st.markdown(
+                        "<div style='background:#0d0d1c;border:1px solid #1a1a2c;"
+                        "border-radius:12px;padding:2rem;text-align:center;"
+                        "color:#2a2a3a;font-size:0.8rem;'>Image unavailable</div>",
+                        unsafe_allow_html=True,
+                    )
                 dt = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
-                st.caption(
-                    f"{entry['style'].upper()} · {entry['image_name']} · "
-                    f"{dt.strftime('%d %b %Y')}"
+                st.markdown(
+                    f"<div class='lib-caption'>"
+                    f"<span class='lib-style'>{entry['style'].upper()}</span>"
+                    f" · {dt.strftime('%d %b %Y')}</div>",
+                    unsafe_allow_html=True,
                 )
-            with col_del:
                 if st.button("Delete", key=f"del_{entry['id']}"):
                     delete_entry(entry["id"])
                     st.rerun()
-            st.divider()
