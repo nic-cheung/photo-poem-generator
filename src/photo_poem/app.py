@@ -303,6 +303,15 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ── Session state ─────────────────────────────────────────────────────────────
+for key in ("poem", "style", "image_bytes", "image_name", "revealed", "audio_bytes", "saved"):
+    if key not in st.session_state:
+        st.session_state[key] = None
+if "revealed" not in st.session_state:
+    st.session_state.revealed = False
+if "saved" not in st.session_state:
+    st.session_state.saved = False
+
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 tab_generate, tab_library = st.tabs(["Generate", "Library"])
 
@@ -313,6 +322,7 @@ with tab_generate:
 
     _on_cloud = not Path("~/Library").expanduser().exists()
 
+    # ── Photo source ──────────────────────────────────────────────────────────
     if _on_cloud:
         source = "Upload photos"
         uploaded_files = st.file_uploader(
@@ -321,43 +331,31 @@ with tab_generate:
             accept_multiple_files=True,
         )
     else:
-        with st.sidebar:
-            st.header("Settings")
-            source = st.radio("Image source", ["Upload photos", "Local folder"])
-            if source == "Local folder":
-                folder = st.text_input(
-                    "Folder path",
-                    value="~/Library/Mobile Documents/com~apple~CloudDocs/Poems",
-                )
-            else:
-                uploaded_files = st.file_uploader(
-                    "Upload photos",
-                    type=["jpg", "jpeg", "png", "webp", "heic"],
-                    accept_multiple_files=True,
-                )
-
-    with st.sidebar:
-        st.subheader("Poem style")
-        style_choice = st.selectbox(
-            "Style",
-            ["Random"] + list(STYLES.keys()),
-            format_func=lambda s: s.capitalize(),
+        source = st.radio(
+            "Image source", ["Upload photos", "Local folder"], horizontal=True,
+            label_visibility="collapsed",
         )
-        selected_style = None if style_choice == "Random" else style_choice
+        if source == "Local folder":
+            folder = st.text_input(
+                "Folder path",
+                value="~/Library/Mobile Documents/com~apple~CloudDocs/Poems",
+                label_visibility="collapsed",
+                placeholder="Folder path…",
+            )
+        else:
+            uploaded_files = st.file_uploader(
+                "Upload photos",
+                type=["jpg", "jpeg", "png", "webp", "heic"],
+                accept_multiple_files=True,
+            )
 
-        st.subheader("Voice")
-        voice_engine = st.radio("Engine", ["gTTS (accents)", "Browser (device voices)"])
-        if voice_engine == "gTTS (accents)":
-            accent_label = st.selectbox("Accent", list(GTTS_ACCENTS.keys()))
-
-    # ── Session state ─────────────────────────────────────────────────────────
-    for key in ("poem", "style", "image_bytes", "image_name", "revealed", "audio_bytes", "saved"):
-        if key not in st.session_state:
-            st.session_state[key] = None
-    if "revealed" not in st.session_state:
-        st.session_state.revealed = False
-    if "saved" not in st.session_state:
-        st.session_state.saved = False
+    # ── Style picker ──────────────────────────────────────────────────────────
+    style_choice = st.selectbox(
+        "Style",
+        ["Random ✦"] + [s.capitalize() for s in STYLES.keys()],
+        label_visibility="collapsed",
+    )
+    selected_style = None if style_choice == "Random ✦" else style_choice.lower()
 
     # ── Generate ──────────────────────────────────────────────────────────────
     if st.button("✦  Generate Poem", type="primary", width="stretch"):
@@ -427,8 +425,22 @@ with tab_generate:
         # Read aloud + Reveal
         col1, col2 = st.columns(2)
         with col1:
+            if st.button("♪  Read Aloud", width="stretch"):
+                with st.expander("Voice settings", expanded=True):
+                    pass
+                st.session_state._show_voice = True
+        with col2:
+            if st.button("◎  Reveal Photo", width="stretch"):
+                st.session_state.revealed = True
+
+        # Voice settings expander
+        with st.expander("Voice settings"):
+            voice_engine = st.radio(
+                "Engine", ["gTTS (accents)", "Browser (device voices)"], horizontal=True
+            )
             if voice_engine == "gTTS (accents)":
-                if st.button("♪  Read Aloud", width="stretch"):
+                accent_label = st.selectbox("Accent", list(GTTS_ACCENTS.keys()))
+                if st.button("▶  Generate audio", width="stretch"):
                     try:
                         from gtts import gTTS
                         tts = gTTS(
@@ -443,77 +455,70 @@ with tab_generate:
                     except Exception as e:
                         st.error(f"Could not generate audio: {e}")
             else:
-                st.session_state.audio_bytes = None
+                poem_json = json.dumps(st.session_state.poem)
+                components.html(
+                    f"""
+                    <style>
+                      body {{ margin:0; font-family: sans-serif; }}
+                      select {{
+                        width: 100%; padding: 6px 8px; margin-bottom: 8px;
+                        background: #0d0d1c; color: #c8c0b0;
+                        border: 1px solid #252535; border-radius: 8px; font-size: 0.85rem;
+                      }}
+                      button {{
+                        width: 100%; padding: 10px; background: #111120; color: #c8c0b0;
+                        border: 1px solid #252535; border-radius: 8px; cursor: pointer;
+                        font-family: Georgia, serif; font-size: 0.9rem; letter-spacing: 0.04em;
+                        transition: all 0.18s;
+                      }}
+                      button:hover {{ border-color: #e94560; color: #e8e0d0; }}
+                      #status {{ font-size:0.72rem; color:#404055; margin-top:5px; text-align:center; }}
+                    </style>
+                    <select id="voice-select"><option>Loading voices…</option></select>
+                    <button onclick="speak()">♪  Read Aloud</button>
+                    <div id="status"></div>
+                    <script>
+                      const text = {poem_json};
+                      const sel = document.getElementById('voice-select');
+                      const status = document.getElementById('status');
+                      function loadVoices() {{
+                        const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+                        if (!voices.length) return false;
+                        sel.innerHTML = '';
+                        voices.forEach((v, i) => {{
+                          const opt = document.createElement('option');
+                          opt.value = i;
+                          opt.textContent = v.name + ' (' + v.lang + ')';
+                          sel.appendChild(opt);
+                        }});
+                        status.textContent = voices.length + ' voices available';
+                        return true;
+                      }}
+                      if (!loadVoices()) {{
+                        const poll = setInterval(() => {{ if (loadVoices()) clearInterval(poll); }}, 100);
+                        window.speechSynthesis.onvoiceschanged = () => {{ loadVoices(); clearInterval(poll); }};
+                      }}
+                      function speak() {{
+                        window.speechSynthesis.cancel();
+                        const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+                        const utt = new SpeechSynthesisUtterance(text);
+                        utt.voice = voices[parseInt(sel.value)] || null;
+                        utt.rate = 0.9;
+                        window.speechSynthesis.speak(utt);
+                      }}
+                    </script>
+                    """,
+                    height=120,
+                )
 
-        with col2:
-            if st.button("◎  Reveal Photo", width="stretch"):
-                st.session_state.revealed = True
-
-        # Audio
-        if voice_engine == "gTTS (accents)" and st.session_state.audio_bytes:
+        # gTTS audio player
+        if st.session_state.audio_bytes:
             audio_b64 = base64.b64encode(st.session_state.audio_bytes).decode()
             st.markdown(
                 f'<audio controls>'
                 f'<source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">'
                 f'</audio>',
                 unsafe_allow_html=True,
-            )
-
-        if voice_engine == "Browser (device voices)":
-            poem_json = json.dumps(st.session_state.poem)
-            components.html(
-                f"""
-                <style>
-                  body {{ margin:0; font-family: sans-serif; }}
-                  select {{
-                    width: 100%; padding: 6px 8px; margin-bottom: 8px;
-                    background: #0d0d1c; color: #c8c0b0;
-                    border: 1px solid #252535; border-radius: 8px; font-size: 0.85rem;
-                  }}
-                  button {{
-                    width: 100%; padding: 10px; background: #111120; color: #c8c0b0;
-                    border: 1px solid #252535; border-radius: 8px; cursor: pointer;
-                    font-family: Georgia, serif; font-size: 0.9rem; letter-spacing: 0.04em;
-                    transition: all 0.18s;
-                  }}
-                  button:hover {{ border-color: #e94560; color: #e8e0d0; }}
-                  #status {{ font-size:0.72rem; color:#404055; margin-top:5px; text-align:center; }}
-                </style>
-                <select id="voice-select"><option>Loading voices…</option></select>
-                <button onclick="speak()">♪  Read Aloud</button>
-                <div id="status"></div>
-                <script>
-                  const text = {poem_json};
-                  const sel = document.getElementById('voice-select');
-                  const status = document.getElementById('status');
-                  function loadVoices() {{
-                    const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
-                    if (!voices.length) return false;
-                    sel.innerHTML = '';
-                    voices.forEach((v, i) => {{
-                      const opt = document.createElement('option');
-                      opt.value = i;
-                      opt.textContent = v.name + ' (' + v.lang + ')';
-                      sel.appendChild(opt);
-                    }});
-                    status.textContent = voices.length + ' voices available';
-                    return true;
-                  }}
-                  if (!loadVoices()) {{
-                    const poll = setInterval(() => {{ if (loadVoices()) clearInterval(poll); }}, 100);
-                    window.speechSynthesis.onvoiceschanged = () => {{ loadVoices(); clearInterval(poll); }};
-                  }}
-                  function speak() {{
-                    window.speechSynthesis.cancel();
-                    const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
-                    const utt = new SpeechSynthesisUtterance(text);
-                    utt.voice = voices[parseInt(sel.value)] || null;
-                    utt.rate = 0.9;
-                    window.speechSynthesis.speak(utt);
-                  }}
-                </script>
-                """,
-                height=120,
             )
 
         # Reveal
