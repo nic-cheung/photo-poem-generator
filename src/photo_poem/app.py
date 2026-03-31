@@ -449,6 +449,38 @@ with tab_generate:
             unsafe_allow_html=True,
         )
 
+        # Copy poem
+        poem_json = json.dumps(st.session_state.poem)
+        components.html(f"""
+            <style>
+              body {{ margin:0; }}
+              button {{
+                width:100%; padding:10px; background:#111120; color:#c8c0b0;
+                border:1px solid #252535; border-radius:9px; cursor:pointer;
+                font-family:Georgia,serif; font-size:0.88rem; letter-spacing:0.05em;
+                transition:all 0.18s;
+              }}
+              button:hover {{ border-color:#e94560; color:#e8e0d0; }}
+            </style>
+            <button id="btn" onclick="copyPoem()">⎘  Copy Poem</button>
+            <script>
+              async function copyPoem() {{
+                const text = {poem_json};
+                const btn = document.getElementById('btn');
+                try {{
+                  await navigator.clipboard.writeText(text);
+                }} catch {{
+                  const ta = document.createElement('textarea');
+                  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+                  document.body.appendChild(ta); ta.select();
+                  document.execCommand('copy'); document.body.removeChild(ta);
+                }}
+                btn.textContent = '✓  Copied!';
+                setTimeout(() => btn.textContent = '⎘  Copy Poem', 2000);
+              }}
+            </script>
+        """, height=48)
+
         # Regenerate + Reveal
         col1, col2 = st.columns(2)
         with col1:
