@@ -11,6 +11,7 @@ STYLES_EN: dict[str, str] = {
     "ode": "an ode (celebratory and lyrical, at least three stanzas, elevated tone)",
     "elegy": "an elegy (mournful and reflective, honouring the feeling of the moment)",
     "prose poem": "a prose poem (written as a paragraph, lyrical and compressed, no line breaks)",
+    "rap": "a rap verse (rhythmic and percussive, internal rhymes, vivid street-level imagery, a punchy 16-bar structure with a hook)",
 }
 
 STYLES_ZH: dict[str, str] = {
