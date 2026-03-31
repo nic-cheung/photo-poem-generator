@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from photo_poem.generator import generate_poem_from_path, generate_poem_from_upload  # noqa: E402
-from photo_poem.prompts import STYLES_BY_LANGUAGE, LANGUAGE_INSTRUCTIONS, POETS  # noqa: E402
+from photo_poem.prompts import STYLES_BY_LANGUAGE, LANGUAGE_INSTRUCTIONS, POETS, RAPPERS  # noqa: E402
 from photo_poem.library import save_entry, load_entries, get_card_bytes, delete_entry  # noqa: E402
 
 GTTS_ACCENTS = {
@@ -385,20 +385,30 @@ with tab_generate:
         )
     selected_style = None if style_choice == "Random ✦" else style_choice
 
-    english_poets = ["Emily Dickinson", "Mary Oliver", "Walt Whitman",
-                     "Sylvia Plath", "Pablo Neruda", "Rumi"]
-    chinese_poets = ["李白 Li Bai", "杜甫 Du Fu", "蘇軾 Su Shi",
-                     "席慕蓉 Xi Murong", "余光中 Yu Guangzhong", "顧城 Gu Cheng"]
-    poet_options = (
-        english_poets if selected_language == "English" else chinese_poets
-    )
+    _rap_styles = {"rap", "說唱 (Rap)", "廣東話說唱 (Rap)"}
+    _is_rap = selected_style in _rap_styles
+    if _is_rap:
+        english_rappers = ["Kendrick Lamar", "Jay-Z", "Lauryn Hill",
+                           "Frank Ocean", "MF DOOM", "Eminem"]
+        chinese_rappers = ["陳奕迅 Eason Chan", "MC仁 (LMF)", "GAI (中文说唱)", "Higher Brothers"]
+        artist_options = english_rappers if selected_language == "English" else chinese_rappers
+        voice_placeholder = "Artist voice (optional)…"
+        voice_none = "No specific artist"
+    else:
+        english_poets = ["Emily Dickinson", "Mary Oliver", "Walt Whitman",
+                         "Sylvia Plath", "Pablo Neruda", "Rumi"]
+        chinese_poets = ["李白 Li Bai", "杜甫 Du Fu", "蘇軾 Su Shi",
+                         "席慕蓉 Xi Murong", "余光中 Yu Guangzhong", "顧城 Gu Cheng"]
+        artist_options = english_poets if selected_language == "English" else chinese_poets
+        voice_placeholder = "Poet voice (optional)…"
+        voice_none = "No specific poet"
     poet_choice = st.selectbox(
         "Poet voice",
-        ["No specific poet"] + poet_options,
+        [voice_none] + artist_options,
         label_visibility="collapsed",
-        placeholder="Poet voice (optional)…",
+        placeholder=voice_placeholder,
     )
-    selected_poet = None if poet_choice == "No specific poet" else poet_choice
+    selected_poet = None if poet_choice in ("No specific poet", "No specific artist") else poet_choice
 
     # ── Generate ──────────────────────────────────────────────────────────────
     if st.button("✦  Generate Poem", type="primary", width="stretch"):

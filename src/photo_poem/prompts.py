@@ -150,6 +150,54 @@ POETS: dict[str, str] = {
     ),
 }
 
+RAPPERS: dict[str, str] = {
+    # English
+    "Kendrick Lamar": (
+        "in the style of Kendrick Lamar — dense internal rhymes, shifting perspectives, "
+        "vivid Compton-rooted imagery elevated to the universal, intense introspection "
+        "that builds to a moment of reckoning"
+    ),
+    "Jay-Z": (
+        "in the style of Jay-Z — confident and precise, multi-syllable rhyme schemes, "
+        "sharp wit and street-smart metaphors, a narrator who observes the world "
+        "with cool detachment and hard-won wisdom"
+    ),
+    "Lauryn Hill": (
+        "in the style of Lauryn Hill — soulful and raw, melody woven into the flow, "
+        "deeply personal and spiritual, love and loss delivered with unflinching honesty"
+    ),
+    "Frank Ocean": (
+        "in the style of Frank Ocean — intimate and elliptical, non-linear storytelling, "
+        "tender vulnerability, sensory details that conjure memory and longing"
+    ),
+    "MF DOOM": (
+        "in the style of MF DOOM — labyrinthine internal rhymes, absurdist imagery "
+        "hiding genuine emotion, dense wordplay and unexpected references, "
+        "a mask worn over something deeply felt"
+    ),
+    "Eminem": (
+        "in the style of Eminem — rapid-fire syllables, complex multi-rhyme chains, "
+        "confessional intensity, dark humour cutting through raw personal pain"
+    ),
+    # Chinese / Cantonese
+    "陳奕迅 Eason Chan": (
+        "in the style of Eason Chan (陳奕迅) — emotionally direct Cantonese delivery, "
+        "colloquial warmth, vivid everyday imagery, the ache of ordinary life made poetic"
+    ),
+    "MC仁 (LMF)": (
+        "in the style of MC仁 from LMF — raw Cantonese street voice, sharp social commentary, "
+        "rapid-fire vernacular flow, unapologetically Hong Kong in attitude and imagery"
+    ),
+    "GAI (中文说唱)": (
+        "in the style of GAI — bold Sichuan-inflected Mandarin rap, classical Chinese "
+        "references remixed with modern swagger, vivid regional pride and lyrical density"
+    ),
+    "Higher Brothers": (
+        "in the style of Higher Brothers — bilingual swagger, Chengdu cool, "
+        "mixing Mandarin and English slang, laid-back confidence with sharp punchlines"
+    ),
+}
+
 LANGUAGE_INSTRUCTIONS: dict[str, str] = {
     "English": "",
     "Cantonese": (
@@ -186,7 +234,8 @@ def user_prompt(
     poet: str | None = None,
 ) -> str:
     lang_instruction = LANGUAGE_INSTRUCTIONS.get(language, "")
-    poet_instruction = f" Write {POETS[poet]}." if poet else ""
+    all_voices = {**POETS, **RAPPERS}
+    poet_instruction = f" Write {all_voices[poet]}." if poet and poet in all_voices else ""
     lang_suffix = f" {lang_instruction}" if lang_instruction else ""
     return (
         f"Please write {style_description} inspired by this photograph. "
