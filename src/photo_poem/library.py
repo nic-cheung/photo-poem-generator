@@ -44,9 +44,10 @@ def load_entries() -> list[dict]:
     return result.data
 
 
-def card_url(poem_id: str) -> str:
+def get_card_bytes(poem_id: str) -> bytes:
+    """Download card image bytes directly from storage."""
     client = get_supabase()
-    return client.storage.from_(BUCKET).get_public_url(f"{poem_id}.jpg")
+    return bytes(client.storage.from_(BUCKET).download(f"{poem_id}.jpg"))
 
 
 def delete_entry(poem_id: str) -> None:

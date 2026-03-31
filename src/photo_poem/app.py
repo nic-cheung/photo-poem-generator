@@ -18,7 +18,7 @@ load_dotenv()
 
 from photo_poem.generator import generate_poem_from_path, generate_poem_from_upload  # noqa: E402
 from photo_poem.prompts import STYLES  # noqa: E402
-from photo_poem.library import save_entry, load_entries, card_url, delete_entry  # noqa: E402
+from photo_poem.library import save_entry, load_entries, get_card_bytes, delete_entry  # noqa: E402
 
 GTTS_ACCENTS = {
     "🇺🇸 US English": "com",
@@ -397,8 +397,11 @@ with tab_library:
         st.info("No poems saved yet. Generate one and click 'Save to Library'.")
     else:
         for entry in entries:
-            url = card_url(entry["id"])
-            st.image(url, width="stretch")
+            try:
+                card_data = get_card_bytes(entry["id"])
+                st.image(card_data, width="stretch")
+            except Exception:
+                st.warning(f"Could not load image for entry {entry['id'][:8]}…")
             col_meta, col_del = st.columns([4, 1])
             with col_meta:
                 from datetime import datetime, timezone
