@@ -18,15 +18,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from photo_poem.generator import generate_poem_from_path, generate_poem_from_upload  # noqa: E402
-from photo_poem.prompts import STYLES  # noqa: E402
+from photo_poem.prompts import STYLES, LANGUAGE_INSTRUCTIONS  # noqa: E402
 from photo_poem.library import save_entry, load_entries, get_card_bytes, delete_entry  # noqa: E402
 
 GTTS_ACCENTS = {
-    "🇺🇸 US English": "com",
-    "🇬🇧 UK English": "co.uk",
-    "🇦🇺 Australian": "com.au",
-    "🇮🇳 Indian": "co.in",
-    "🇨🇦 Canadian": "ca",
+    "🇺🇸 US English": ("en", "com"),
+    "🇬🇧 UK English": ("en", "co.uk"),
+    "🇦🇺 Australian": ("en", "com.au"),
+    "🇮🇳 Indian": ("en", "co.in"),
+    "🇨🇦 Canadian": ("en", "ca"),
+    "🇨🇳 Mandarin": ("zh-CN", "com"),
+    "🇭🇰 Cantonese": ("zh-TW", "com.hk"),
 }
 
 CSS = """
@@ -365,12 +367,20 @@ with tab_generate:
                 accept_multiple_files=True,
             )
 
-    # ── Style picker ──────────────────────────────────────────────────────────
-    style_choice = st.selectbox(
-        "Style",
-        ["Random ✦"] + [s.capitalize() for s in STYLES.keys()],
-        label_visibility="collapsed",
-    )
+    # ── Language + style pickers ──────────────────────────────────────────────
+    lang_col, style_col = st.columns([1, 2])
+    with lang_col:
+        selected_language = st.selectbox(
+            "Language",
+            list(LANGUAGE_INSTRUCTIONS.keys()),
+            label_visibility="collapsed",
+        )
+    with style_col:
+        style_choice = st.selectbox(
+            "Style",
+            ["Random ✦"] + [s.capitalize() for s in STYLES.keys()],
+            label_visibility="collapsed",
+        )
     selected_style = None if style_choice == "Random ✦" else style_choice.lower()
 
     # ── Generate ──────────────────────────────────────────────────────────────
@@ -387,7 +397,7 @@ with tab_generate:
                 chosen = random.choice(uploaded_files)
                 file_bytes = chosen.read()
                 with st.spinner("Writing your poem…"):
-                    poem, style = generate_poem_from_upload(file_bytes, selected_style)
+                    poem, style = generate_poem_from_upload(file_bytes, selected_style, selected_language)
                 st.session_state.poem = poem
                 st.session_state.style = style
                 st.session_state.image_bytes = _fix_orientation(file_bytes)
@@ -403,7 +413,7 @@ with tab_generate:
                     st.stop()
                 chosen_path = random.choice(image_files)
                 with st.spinner("Writing your poem…"):
-                    poem, style = generate_poem_from_path(chosen_path, selected_style)
+                    poem, style = generate_poem_from_path(chosen_path, selected_style, selected_language)
                 st.session_state.poem = poem
                 st.session_state.style = style
                 with open(chosen_path, "rb") as f:
@@ -430,7 +440,7 @@ with tab_generate:
                 with st.spinner("Writing a new poem…"):
                     try:
                         poem, style = generate_poem_from_upload(
-                            st.session_state.image_bytes, selected_style
+                            st.session_state.image_bytes, selected_style, selected_language
                         )
                         st.session_state.poem = poem
                         st.session_state.style = style
@@ -453,10 +463,11 @@ with tab_generate:
                 if st.button("▶  Generate audio", width="stretch"):
                     try:
                         from gtts import gTTS
+                        _lang, _tld = GTTS_ACCENTS[accent_label]
                         tts = gTTS(
                             text=st.session_state.poem,
-                            lang="en",
-                            tld=GTTS_ACCENTS[accent_label],
+                            lang=_lang,
+                            tld=_tld,
                             slow=False,
                         )
                         audio_buffer = io.BytesIO()

@@ -10,6 +10,17 @@ STYLES: dict[str, str] = {
     "elegy": "an elegy (mournful, reflective, honouring the moment captured)",
 }
 
+LANGUAGE_INSTRUCTIONS: dict[str, str] = {
+    "English": "",
+    "Cantonese": (
+        "Write the poem in Cantonese (廣東話), using Traditional Chinese characters. "
+        "Use natural Cantonese phrasing and expressions, not translated Mandarin."
+    ),
+    "Mandarin": (
+        "Write the poem in Mandarin Chinese (普通話), using Simplified Chinese characters."
+    ),
+}
+
 SYSTEM_PROMPT = (
     "You are a gifted poet who finds beauty and meaning in photographs. "
     "When given an image you write an evocative poem that captures the feeling "
@@ -25,10 +36,12 @@ def random_style() -> tuple[str, str]:
     return name, STYLES[name]
 
 
-def user_prompt(style_description: str) -> str:
+def user_prompt(style_description: str, language: str = "English") -> str:
+    lang_instruction = LANGUAGE_INSTRUCTIONS.get(language, "")
+    lang_suffix = f" {lang_instruction}" if lang_instruction else ""
     return (
         f"Please write {style_description} inspired by this photograph. "
         "Capture the mood, the light, the feeling of the moment — "
         "but keep it mysterious enough that someone would have to think "
-        "carefully to guess which memory this is."
+        f"carefully to guess which memory this is.{lang_suffix}"
     )
