@@ -188,11 +188,27 @@ div[data-testid="element-container"]:has(button[kind="primary"]) button {
     font-family: Georgia, serif;
 }
 
-/* ── Sidebar ─────────────────────────────────────────────────────────────── */
-[data-testid="stSidebar"] { background: #080810 !important; border-right: 1px solid #111120 !important; }
-[data-testid="stSidebar"] label { font-size: 0.82rem !important; color: #888 !important; }
-[data-testid="stSidebar"] .stSelectbox > div > div,
-[data-testid="stSidebar"] .stRadio > div { font-size: 0.85rem !important; }
+/* ── Hide sidebar toggle (no sidebar content) ────────────────────────────── */
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="stSidebarContent"],
+section[data-testid="stSidebar"] { display: none !important; }
+
+/* ── Selectbox (style picker) ────────────────────────────────────────────── */
+.stSelectbox > div > div {
+    background: #0d0d1c !important;
+    border: 1px solid #1a1a2c !important;
+    border-radius: 9px !important;
+    font-size: 0.88rem !important;
+    color: #c8c0b0 !important;
+}
+
+/* ── Expander ────────────────────────────────────────────────────────────── */
+.stExpander {
+    border: 1px solid #151520 !important;
+    border-radius: 10px !important;
+    background: #0a0a14 !important;
+}
+.stExpander summary { font-size: 0.82rem !important; color: #484858 !important; letter-spacing: 0.05em !important; }
 
 /* ── Misc ────────────────────────────────────────────────────────────────── */
 hr { border-color: #111120 !important; margin: 1.2rem 0 !important; }
@@ -407,28 +423,22 @@ with tab_generate:
             unsafe_allow_html=True,
         )
 
-        # Regenerate
-        if st.button("↺  Regenerate", width="stretch"):
-            with st.spinner("Writing a new poem…"):
-                try:
-                    poem, style = generate_poem_from_upload(
-                        st.session_state.image_bytes, selected_style
-                    )
-                    st.session_state.poem = poem
-                    st.session_state.style = style
-                    st.session_state.audio_bytes = None
-                    st.session_state.saved = False
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Something went wrong: {e}")
-
-        # Read aloud + Reveal
+        # Regenerate + Reveal
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("♪  Read Aloud", width="stretch"):
-                with st.expander("Voice settings", expanded=True):
-                    pass
-                st.session_state._show_voice = True
+            if st.button("↺  Regenerate", width="stretch"):
+                with st.spinner("Writing a new poem…"):
+                    try:
+                        poem, style = generate_poem_from_upload(
+                            st.session_state.image_bytes, selected_style
+                        )
+                        st.session_state.poem = poem
+                        st.session_state.style = style
+                        st.session_state.audio_bytes = None
+                        st.session_state.saved = False
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Something went wrong: {e}")
         with col2:
             if st.button("◎  Reveal Photo", width="stretch"):
                 st.session_state.revealed = True
