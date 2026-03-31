@@ -39,6 +39,10 @@ STYLES_ZH: dict[str, str] = {
         "a sanwen shi (散文詩) — a prose poem written as flowing paragraphs, "
         "lyrical and impressionistic, blurring the line between prose and verse"
     ),
+    "說唱 (Rap)": (
+        "a Chinese rap verse (說唱) — rhythmic and punchy, strong internal rhymes "
+        "in Mandarin, vivid imagery, a modern 16-bar structure with a hook"
+    ),
 }
 
 STYLES_YUE: dict[str, str] = {
@@ -66,6 +70,11 @@ STYLES_YUE: dict[str, str] = {
     "現代粵語詩": (
         "a modern Cantonese free verse poem (現代粵語詩) — contemporary, personal, "
         "written in Cantonese with a natural speaking voice and honest emotional directness"
+    ),
+    "廣東話說唱 (Rap)": (
+        "a Cantonese rap verse (廣東話說唱) — rhythmic and percussive, rich with "
+        "Cantonese slang and tonal wordplay, vivid imagery, a punchy 16-bar structure "
+        "with a hook, in the tradition of HK hip-hop"
     ),
 }
 
