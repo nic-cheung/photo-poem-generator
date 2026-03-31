@@ -398,7 +398,7 @@ with tab_library:
     else:
         for entry in entries:
             url = card_url(entry["id"])
-            st.image(url, use_container_width=True)
+            st.image(url, width="stretch")
             col_meta, col_del = st.columns([4, 1])
             with col_meta:
                 from datetime import datetime, timezone
