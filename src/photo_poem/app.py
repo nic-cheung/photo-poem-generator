@@ -27,7 +27,8 @@ GTTS_ACCENTS = {
     "🇦🇺 Australian": ("en", "com.au"),
     "🇮🇳 Indian": ("en", "co.in"),
     "🇨🇦 Canadian": ("en", "ca"),
-    "🇨🇳 Mandarin": ("zh-CN", "com"),
+    "🇨🇳 Mandarin (Simplified)": ("zh-CN", "com"),
+    "🇹🇼 Mandarin (Traditional)": ("zh-TW", "com"),
     "🇭🇰 Cantonese": ("zh-TW", "com.hk"),
 }
 

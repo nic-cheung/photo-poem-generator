@@ -70,7 +70,8 @@ STYLES_YUE: dict[str, str] = {
 
 STYLES_BY_LANGUAGE: dict[str, dict[str, str]] = {
     "English": STYLES_EN,
-    "Mandarin": STYLES_ZH,
+    "Mandarin (Simplified)": STYLES_ZH,
+    "Mandarin (Traditional)": STYLES_ZH,
     "Cantonese": STYLES_YUE,
 }
 
@@ -145,8 +146,11 @@ LANGUAGE_INSTRUCTIONS: dict[str, str] = {
         "Write the poem in Cantonese (廣東話), using Traditional Chinese characters. "
         "Use natural Cantonese phrasing and expressions, not translated Mandarin."
     ),
-    "Mandarin": (
-        "Write the poem in Mandarin Chinese (普通話), using Simplified Chinese characters."
+    "Mandarin (Simplified)": (
+        "Write the poem in Mandarin Chinese (普通話), using Simplified Chinese characters (简体字)."
+    ),
+    "Mandarin (Traditional)": (
+        "Write the poem in Mandarin Chinese (國語), using Traditional Chinese characters (繁體字)."
     ),
 }
 
