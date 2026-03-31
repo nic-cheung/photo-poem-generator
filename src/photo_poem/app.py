@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from photo_poem.generator import generate_poem_from_path, generate_poem_from_upload  # noqa: E402
-from photo_poem.prompts import STYLES, LANGUAGE_INSTRUCTIONS  # noqa: E402
+from photo_poem.prompts import STYLES_BY_LANGUAGE, LANGUAGE_INSTRUCTIONS, POETS  # noqa: E402
 from photo_poem.library import save_entry, load_entries, get_card_bytes, delete_entry  # noqa: E402
 
 GTTS_ACCENTS = {
@@ -367,7 +367,7 @@ with tab_generate:
                 accept_multiple_files=True,
             )
 
-    # ── Language + style pickers ──────────────────────────────────────────────
+    # ── Language + style + poet pickers ──────────────────────────────────────
     lang_col, style_col = st.columns([1, 2])
     with lang_col:
         selected_language = st.selectbox(
@@ -376,12 +376,28 @@ with tab_generate:
             label_visibility="collapsed",
         )
     with style_col:
+        language_styles = STYLES_BY_LANGUAGE[selected_language]
         style_choice = st.selectbox(
             "Style",
-            ["Random ✦"] + [s.capitalize() for s in STYLES.keys()],
+            ["Random ✦"] + list(language_styles.keys()),
             label_visibility="collapsed",
         )
-    selected_style = None if style_choice == "Random ✦" else style_choice.lower()
+    selected_style = None if style_choice == "Random ✦" else style_choice
+
+    english_poets = ["Emily Dickinson", "Mary Oliver", "Walt Whitman",
+                     "Sylvia Plath", "Pablo Neruda", "Rumi"]
+    chinese_poets = ["李白 Li Bai", "杜甫 Du Fu", "蘇軾 Su Shi",
+                     "席慕蓉 Xi Murong", "余光中 Yu Guangzhong", "顧城 Gu Cheng"]
+    poet_options = (
+        english_poets if selected_language == "English" else chinese_poets
+    )
+    poet_choice = st.selectbox(
+        "Poet voice",
+        ["No specific poet"] + poet_options,
+        label_visibility="collapsed",
+        placeholder="Poet voice (optional)…",
+    )
+    selected_poet = None if poet_choice == "No specific poet" else poet_choice
 
     # ── Generate ──────────────────────────────────────────────────────────────
     if st.button("✦  Generate Poem", type="primary", width="stretch"):
@@ -397,7 +413,7 @@ with tab_generate:
                 chosen = random.choice(uploaded_files)
                 file_bytes = chosen.read()
                 with st.spinner("Writing your poem…"):
-                    poem, style = generate_poem_from_upload(file_bytes, selected_style, selected_language)
+                    poem, style = generate_poem_from_upload(file_bytes, selected_style, selected_language, selected_poet)
                 st.session_state.poem = poem
                 st.session_state.style = style
                 st.session_state.image_bytes = _fix_orientation(file_bytes)
@@ -413,7 +429,7 @@ with tab_generate:
                     st.stop()
                 chosen_path = random.choice(image_files)
                 with st.spinner("Writing your poem…"):
-                    poem, style = generate_poem_from_path(chosen_path, selected_style, selected_language)
+                    poem, style = generate_poem_from_path(chosen_path, selected_style, selected_language, selected_poet)
                 st.session_state.poem = poem
                 st.session_state.style = style
                 with open(chosen_path, "rb") as f:
@@ -440,7 +456,7 @@ with tab_generate:
                 with st.spinner("Writing a new poem…"):
                     try:
                         poem, style = generate_poem_from_upload(
-                            st.session_state.image_bytes, selected_style, selected_language
+                            st.session_state.image_bytes, selected_style, selected_language, selected_poet
                         )
                         st.session_state.poem = poem
                         st.session_state.style = style
