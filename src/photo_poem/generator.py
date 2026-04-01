@@ -68,6 +68,8 @@ def _generate(
         ],
     )
 
+    if not message.content:
+        raise ValueError("API returned empty content")
     block = message.content[0]
     if not isinstance(block, TextBlock):
         raise ValueError(f"Unexpected response block type: {type(block).__name__}")

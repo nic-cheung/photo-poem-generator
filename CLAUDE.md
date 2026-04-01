@@ -27,3 +27,5 @@ Python + Streamlit app using the Anthropic SDK, Pillow, Supabase, and gTTS.
 - **Mandatory pushback.** If a request is insecure, suboptimal, or inconsistent with project patterns, say so and propose a better alternative before complying.
 - **Risk section required.** Every multi-step plan must include a "Risks / Failure Modes" section before execution begins.
 - **No assumed paths.** Do not reference a file, library, or import that hasn't been confirmed to exist via a tool call.
+- **Edge-case callout.** When implementing logic that handles external data (API responses, user uploads, database results), explicitly identify the most likely failure point before writing code — null/empty responses, wrong types, network errors.
+- **Code review agent for complex changes.** For changes involving new data flows, API integrations, or logic with multiple branches, suggest spawning a code-review subagent before the user approves a PR.
