@@ -16,6 +16,7 @@ Python + Streamlit app using the Anthropic SDK, Pillow, Supabase, and gTTS.
 - **Atomic commits.** Each commit must represent one logical change. Never bundle a feature and a bug fix in the same commit.
 - **Conventional commits.** Use the format `type(scope): description` where type is one of: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`. Example: `feat(prompts): per-style poet selection`.
 - **Stage selectively.** Use `git add <file>` — never `git add -A` or `git add .` — to keep unrelated changes out of a commit.
+- **Merge to main when shippable.** Feature branches are short-lived. Once commits are clean and the feature works, merge to main (or open a PR) so deployments stay current.
 
 ## Interaction Standards
 
