@@ -32,6 +32,20 @@ GTTS_ACCENTS = {
     "🇭🇰 Cantonese": ("zh-TW", "com.hk"),
 }
 
+LANGUAGE_DEFAULT_ACCENT: dict[str, str] = {
+    "English": "🇺🇸 US English",
+    "Mandarin (Simplified)": "🇨🇳 Mandarin (Simplified)",
+    "Mandarin (Traditional)": "🇹🇼 Mandarin (Traditional)",
+    "Cantonese": "🇭🇰 Cantonese",
+}
+
+LANGUAGE_VOICE_PREFIX: dict[str, str] = {
+    "English": "en",
+    "Mandarin (Simplified)": "zh",
+    "Mandarin (Traditional)": "zh",
+    "Cantonese": "zh",
+}
+
 CSS = """
 <style>
 /* ── Chrome ─────────────────────────────────────────────────────────────── */
@@ -414,6 +428,7 @@ with tab_generate:
                     poem, style = generate_poem_from_upload(file_bytes, selected_style, selected_language, selected_poet)
                 st.session_state.poem = poem
                 st.session_state.style = style
+                st.session_state.language = selected_language
                 st.session_state.image_bytes = _fix_orientation(file_bytes)
                 st.session_state.image_name = chosen.name
             else:
@@ -430,6 +445,7 @@ with tab_generate:
                     poem, style = generate_poem_from_path(chosen_path, selected_style, selected_language, selected_poet)
                 st.session_state.poem = poem
                 st.session_state.style = style
+                st.session_state.language = selected_language
                 with open(chosen_path, "rb") as f:
                     st.session_state.image_bytes = _fix_orientation(f.read())
                 st.session_state.image_name = chosen_path.name
@@ -505,7 +521,12 @@ with tab_generate:
                 "Engine", ["gTTS (accents)", "Browser (device voices)"], horizontal=True
             )
             if voice_engine == "gTTS (accents)":
-                accent_label = st.selectbox("Accent", list(GTTS_ACCENTS.keys()))
+                _poem_lang = st.session_state.get("language", "English")
+                _accent_keys = list(GTTS_ACCENTS.keys())
+                _default_accent = LANGUAGE_DEFAULT_ACCENT.get(_poem_lang, "🇺🇸 US English")
+                accent_label = st.selectbox(
+                    "Accent", _accent_keys, index=_accent_keys.index(_default_accent)
+                )
                 if st.button("▶  Generate audio", width="stretch"):
                     try:
                         from gtts import gTTS
@@ -522,6 +543,8 @@ with tab_generate:
                     except Exception as e:
                         st.error(f"Could not generate audio: {e}")
             else:
+                _poem_lang = st.session_state.get("language", "English")
+                _voice_prefix = LANGUAGE_VOICE_PREFIX.get(_poem_lang, "en")
                 poem_json = json.dumps(st.session_state.poem)
                 components.html(
                     f"""
@@ -549,9 +572,9 @@ with tab_generate:
                       const sel = document.getElementById('voice-select');
                       const status = document.getElementById('status');
                       function loadVoices() {{
-                        const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+                        const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('{_voice_prefix}'));
                         if (!voices.length) return false;
-                        sel.innerHTML = '';
+                        sel.replaceChildren();
                         voices.forEach((v, i) => {{
                           const opt = document.createElement('option');
                           opt.value = i;
@@ -567,7 +590,7 @@ with tab_generate:
                       }}
                       function speak() {{
                         window.speechSynthesis.cancel();
-                        const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+                        const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('{_voice_prefix}'));
                         const utt = new SpeechSynthesisUtterance(text);
                         utt.voice = voices[parseInt(sel.value)] || null;
                         utt.rate = 0.9;
