@@ -5,3 +5,5 @@ streamlit
 python-dotenv
 gtts
 supabase
+elevenlabs
+openai

@@ -21,24 +21,6 @@ from photo_poem.generator import generate_poem_from_path, generate_poem_from_upl
 from photo_poem.prompts import STYLES_BY_LANGUAGE, LANGUAGE_INSTRUCTIONS, POETS_BY_STYLE  # noqa: E402
 from photo_poem.library import save_entry, load_entries, get_card_bytes, delete_entry  # noqa: E402
 
-GTTS_ACCENTS = {
-    "🇺🇸 US English": ("en", "com"),
-    "🇬🇧 UK English": ("en", "co.uk"),
-    "🇦🇺 Australian": ("en", "com.au"),
-    "🇮🇳 Indian": ("en", "co.in"),
-    "🇨🇦 Canadian": ("en", "ca"),
-    "🇨🇳 Mandarin (Simplified)": ("zh-CN", "com"),
-    "🇹🇼 Mandarin (Traditional)": ("zh-TW", "com"),
-    "🇭🇰 Cantonese": ("zh-TW", "com.hk"),
-}
-
-LANGUAGE_DEFAULT_ACCENT: dict[str, str] = {
-    "English": "🇺🇸 US English",
-    "Mandarin (Simplified)": "🇨🇳 Mandarin (Simplified)",
-    "Mandarin (Traditional)": "🇹🇼 Mandarin (Traditional)",
-    "Cantonese": "🇭🇰 Cantonese",
-}
-
 LANGUAGE_VOICE_PREFIX: dict[str, str] = {
     "English": "en",
     "Mandarin (Simplified)": "zh",
@@ -518,30 +500,24 @@ with tab_generate:
         # Voice settings expander
         with st.expander("Voice settings"):
             voice_engine = st.radio(
-                "Engine", ["gTTS (accents)", "Browser (device voices)"], horizontal=True
+                "Engine",
+                ["Auto (ElevenLabs → OpenAI → gTTS)", "Browser (device voices)"],
+                horizontal=True,
             )
-            if voice_engine == "gTTS (accents)":
-                _poem_lang = st.session_state.get("language", "English")
-                _accent_keys = list(GTTS_ACCENTS.keys())
-                _default_accent = LANGUAGE_DEFAULT_ACCENT.get(_poem_lang, "🇺🇸 US English")
-                accent_label = st.selectbox(
-                    "Accent", _accent_keys, index=_accent_keys.index(_default_accent)
-                )
+            if voice_engine == "Auto (ElevenLabs → OpenAI → gTTS)":
                 if st.button("▶  Generate audio", width="stretch"):
-                    try:
-                        from gtts import gTTS
-                        _lang, _tld = GTTS_ACCENTS[accent_label]
-                        tts = gTTS(
-                            text=st.session_state.poem,
-                            lang=_lang,
-                            tld=_tld,
-                            slow=False,
-                        )
-                        audio_buffer = io.BytesIO()
-                        tts.write_to_fp(audio_buffer)
-                        st.session_state.audio_bytes = audio_buffer.getvalue()
-                    except Exception as e:
-                        st.error(f"Could not generate audio: {e}")
+                    with st.spinner("Generating audio…"):
+                        try:
+                            from photo_poem.tts import generate_audio
+                            _poem_lang = st.session_state.get("language", "English")
+                            _style = st.session_state.get("style", "")
+                            audio_bytes, engine = generate_audio(
+                                st.session_state.poem, _poem_lang, _style
+                            )
+                            st.session_state.audio_bytes = audio_bytes
+                            st.session_state.audio_engine = engine
+                        except Exception as e:
+                            st.error(f"Could not generate audio: {e}")
             else:
                 _poem_lang = st.session_state.get("language", "English")
                 _voice_prefix = LANGUAGE_VOICE_PREFIX.get(_poem_lang, "en")
@@ -601,7 +577,7 @@ with tab_generate:
                     height=120,
                 )
 
-        # gTTS audio player
+        # Audio player
         if st.session_state.audio_bytes:
             audio_b64 = base64.b64encode(st.session_state.audio_bytes).decode()
             st.markdown(
@@ -610,6 +586,8 @@ with tab_generate:
                 f'</audio>',
                 unsafe_allow_html=True,
             )
+            if st.session_state.get("audio_engine"):
+                st.caption(f"Generated with {st.session_state.audio_engine}")
 
         # Reveal
         if st.session_state.revealed and st.session_state.image_bytes:
