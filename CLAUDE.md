@@ -21,6 +21,11 @@ Python + Streamlit app using the Anthropic SDK, Pillow, Supabase, and gTTS.
 
 - **Demand clarity on vague requests.** If a request lacks a specific file, behaviour, or success criterion, ask 2–3 targeted questions before implementing anything.
 
+## Safety & FinOps
+
+- **No new packages without a name check.** Before any `uv add`, confirm the package name is the canonical one (e.g. `pillow` not `Pillow`, `python-dotenv` not `dotenv`). Typosquatting is real. If unsure, check PyPI directly.
+- **Loop prevention.** If the same error recurs after 3 distinct fix attempts, stop and ask the user for a Mental Reset rather than continuing to iterate blindly.
+
 ## Critical Thinking & Verification Protocol
 
 - **Verify before proposing.** Read or grep the actual file before suggesting changes. Never assume file structure or content.

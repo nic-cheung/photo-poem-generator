@@ -15,7 +15,7 @@ def get_client() -> anthropic.Anthropic:
 
 
 def get_model() -> str:
-    return _get_secret("DEFAULT_MODEL") or "claude-opus-4-6"
+    return _get_secret("DEFAULT_MODEL") or "claude-sonnet-4-6"
 
 
 def _get_secret(key: str) -> str | None:
