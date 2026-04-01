@@ -32,7 +32,7 @@ def correct_orientation(file_bytes: bytes) -> bytes:
 
 def _resize(img: Image.Image) -> Image.Image:
     if max(img.size) > MAX_DIMENSION:
-        img.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.LANCZOS)
+        img.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.Resampling.LANCZOS)
     return img
 
 

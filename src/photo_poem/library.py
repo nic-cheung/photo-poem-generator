@@ -23,7 +23,7 @@ def save_entry(poem: str, style: str, image_name: str, card_bytes: bytes) -> str
         .insert({"poem": poem, "style": style, "image_name": image_name})
         .execute()
     )
-    poem_id = result.data[0]["id"]
+    poem_id = str(result.data[0]["id"])  # type: ignore[index, call-overload]
     client.storage.from_(BUCKET).upload(
         path=f"{poem_id}.jpg",
         file=card_bytes,
@@ -41,7 +41,7 @@ def load_entries() -> list[dict]:
         .order("created_at", desc=True)
         .execute()
     )
-    return result.data
+    return result.data  # type: ignore[return-value]
 
 
 def get_card_bytes(poem_id: str) -> bytes:
@@ -60,7 +60,7 @@ def _secret(key: str) -> str | None:
     try:
         val = st.secrets.get(key)
         if val:
-            return val
+            return str(val)
     except Exception:
         pass
     return os.getenv(key)
