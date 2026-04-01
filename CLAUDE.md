@@ -2,6 +2,27 @@
 
 Python + Streamlit app using the Anthropic SDK, Pillow, Supabase, and gTTS.
 
+## Quick Start
+
+```bash
+uv run streamlit run src/photo_poem/app.py   # run locally
+uv run ruff check . --fix                    # lint
+uv run mypy src/ --ignore-missing-imports    # type-check
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml  # first-time setup
+```
+
+## Architecture
+
+```
+src/photo_poem/
+├── app.py           # Streamlit UI — all pages and widgets
+├── generator.py     # Claude API calls — poem generation
+├── prompts.py       # Style/poet data and prompt construction
+├── image_utils.py   # Pillow resize, EXIF correction, base64 encoding
+├── library.py       # Supabase read/write for saved poems
+└── claude_client.py # Anthropic client and model config
+```
+
 ## Development Protocols
 
 - **Plan before editing.** For any change touching more than one file, state the plan and wait for approval before writing code.
