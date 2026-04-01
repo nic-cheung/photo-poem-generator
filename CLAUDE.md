@@ -8,6 +8,7 @@ Python + Streamlit app using the Anthropic SDK, Pillow, Supabase, and gTTS.
 - **Surgical edits only.** Edit the specific lines that need changing. Never rewrite an entire file to make a small fix.
 - **Run tests after fixes.** After any bug fix, run `python -m pytest` (if tests exist) automatically without asking.
 - **Python conventions.** Use `uv` for package management. Do not add dependencies beyond what's in `requirements.txt` without asking. Always prefix project tools (`ruff`, `mypy`, `pytest`) with `uv run` to ensure the correct virtual environment is used.
+- **Streamlit widget rules.** Use `st.session_state.setdefault()` to initialise state keys (avoids KeyError on first render). Give every widget a unique `key=` argument to prevent duplicate-key crashes.
 - **Compact after features.** Run `/compact` after each feature is complete to keep context lean.
 
 ## Git Workflow
@@ -24,6 +25,7 @@ Python + Streamlit app using the Anthropic SDK, Pillow, Supabase, and gTTS.
 
 ## Safety & FinOps
 
+- **Secret hygiene.** API keys and credentials must live in `.streamlit/secrets.toml` or `.env`. Never hardcode them in source files.
 - **No new packages without a name check.** Before any `uv add`, confirm the package name is the canonical one (e.g. `pillow` not `Pillow`, `python-dotenv` not `dotenv`). Typosquatting is real. If unsure, check PyPI directly.
 - **Loop prevention.** If the same error recurs after 3 distinct fix attempts, stop and ask the user for a Mental Reset rather than continuing to iterate blindly.
 
