@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from photo_poem.generator import generate_poem_from_path, generate_poem_from_upload  # noqa: E402
-from photo_poem.prompts import STYLES_BY_LANGUAGE, LANGUAGE_INSTRUCTIONS, POETS  # noqa: E402
+from photo_poem.prompts import STYLES_BY_LANGUAGE, LANGUAGE_INSTRUCTIONS, POETS_BY_STYLE  # noqa: E402
 from photo_poem.library import save_entry, load_entries, get_card_bytes, delete_entry  # noqa: E402
 
 GTTS_ACCENTS = {
@@ -27,7 +27,8 @@ GTTS_ACCENTS = {
     "🇦🇺 Australian": ("en", "com.au"),
     "🇮🇳 Indian": ("en", "co.in"),
     "🇨🇦 Canadian": ("en", "ca"),
-    "🇨🇳 Mandarin": ("zh-CN", "com"),
+    "🇨🇳 Mandarin (Simplified)": ("zh-CN", "com"),
+    "🇹🇼 Mandarin (Traditional)": ("zh-TW", "com"),
     "🇭🇰 Cantonese": ("zh-TW", "com.hk"),
 }
 
@@ -250,7 +251,7 @@ def _make_card(poem: str, style: str, image_bytes: bytes) -> bytes:
         new_h, new_w = CARD_H, int(photo.width * CARD_H / photo.height)
     else:
         new_w, new_h = HALF_W, int(photo.height * HALF_W / photo.width)
-    photo = photo.resize((new_w, new_h), Image.LANCZOS)
+    photo = photo.resize((new_w, new_h), Image.Resampling.LANCZOS)
     cx, cy = (new_w - HALF_W) // 2, (new_h - CARD_H) // 2
     photo = photo.crop((cx, cy, cx + HALF_W, cy + CARD_H))
 
@@ -384,20 +385,17 @@ with tab_generate:
         )
     selected_style = None if style_choice == "Random ✦" else style_choice
 
-    english_poets = ["Emily Dickinson", "Mary Oliver", "Walt Whitman",
-                     "Sylvia Plath", "Pablo Neruda", "Rumi"]
-    chinese_poets = ["李白 Li Bai", "杜甫 Du Fu", "蘇軾 Su Shi",
-                     "席慕蓉 Xi Murong", "余光中 Yu Guangzhong", "顧城 Gu Cheng"]
-    poet_options = (
-        english_poets if selected_language == "English" else chinese_poets
-    )
-    poet_choice = st.selectbox(
-        "Poet voice",
-        ["No specific poet"] + poet_options,
-        label_visibility="collapsed",
-        placeholder="Poet voice (optional)…",
-    )
-    selected_poet = None if poet_choice == "No specific poet" else poet_choice
+    selected_poet = None
+    if selected_style is not None:
+        style_poets = POETS_BY_STYLE.get(selected_style, {})
+        if style_poets:
+            poet_options = ["No specific poet"] + list(style_poets.keys())
+            poet_choice = st.selectbox(
+                "Poet voice",
+                poet_options,
+                label_visibility="collapsed",
+            )
+            selected_poet = None if poet_choice == "No specific poet" else poet_choice
 
     # ── Generate ──────────────────────────────────────────────────────────────
     if st.button("✦  Generate Poem", type="primary", width="stretch"):

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/nc/Claude/projects/photo-poem-generator && uv run ruff check . --fix --quiet && uv run mypy src/ --ignore-missing-imports",
+            "statusMessage": "ruff + mypy: linting and type-checking..."
+          }
+        ]
+      }
+    ]
+  }
+}

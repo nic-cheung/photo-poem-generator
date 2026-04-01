@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from anthropic.types import TextBlock
+
 from .claude_client import get_client, get_model
 from .image_utils import load_image_as_base64, load_uploaded_image_as_base64
 from .prompts import STYLES_BY_LANGUAGE, SYSTEM_PROMPT, random_style, user_prompt
@@ -59,12 +61,17 @@ def _generate(
                     },
                     {
                         "type": "text",
-                        "text": user_prompt(style_description, language, poet),
+                        "text": user_prompt(style_description, language, poet, style_name),
                     },
                 ],
             }
         ],
     )
 
-    poem = message.content[0].text.strip()
+    if not message.content:
+        raise ValueError("API returned empty content")
+    block = message.content[0]
+    if not isinstance(block, TextBlock):
+        raise ValueError(f"Unexpected response block type: {type(block).__name__}")
+    poem = block.text.strip()
     return poem, style_name
